@@ -43,8 +43,6 @@ Mat modifyImage(Mat image) {
 void img2freq(Mat input) {
   Audio::Open();
 
-  // sampling frequency
-  float samp_freq = 8000;
   // create freq matrix and fill with a default value of 0
   float freq[64] = {0};
   
@@ -63,7 +61,7 @@ void img2freq(Mat input) {
   // t = time == samples
   float t[n];
   for(int i = 0; i < n; ++i) {
-    t[i] = (i+1)/samp_freq;
+    t[i] = (i+1)/Audio::GetFrequency();
   }
 
   int inc = 0;
