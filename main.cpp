@@ -40,59 +40,56 @@ Mat modifyImage(Mat image) {
   return res;
 }
 
-void initializeAudio(double sample, double samp_freq) {
+void img2freq(Mat input) {
   Audio::Open();
 
-  Audio::Close();
-}
-
-void img2freq(Mat input) {
   // sampling frequency
-  double samp_freq = 8000;
+  float samp_freq = 8000;
   // create freq matrix and fill with a default value of 0
-  double freq[64] = {0};
+  float freq[64] = {0};
   
   // center frequency on 'A'
   // sequentially create higher and lower frequencies
-  freq[32] = 440.0;
-  for(int i = 33; i < 64; ++i) {
+  freq[31] = 440.0;
+  for(int i = 32; i < 64; ++i) {
     freq[i] = freq[i-1] * pow(2.0, (1.0/12.0));
   }
-  for(int i = 31; i > -1; --i) {
+  for(int i = 30; i > -1; --i) {
     freq[i] = freq[i+1] * pow(2.0, (-1.0/12.0));
   }
+  
 
+  const size_t n = 500;
   // t = time == samples
-  double t[500];
-  for(int i = 0; i < 500; ++i) {
+  float t[n];
+  for(int i = 0; i < n; ++i) {
     t[i] = (i+1)/samp_freq;
   }
 
+  int inc = 0;
   // sound every column as a chord
   for(int col = 0; col < 64; ++col) {
-    double signal[500] = {0};
+    float signal[n] = {0};
     for(int row = 0; row < 64; ++row) {
       float value = input.at<uchar>(row,col);
       value = value / 255.0;
-      int m = 64-row+1;
-      double ss[500];
-      for(int i = 0; i < 500; ++i) {
-	ss[i] = sin(2.0*M_PI*freq[m]*t[i]);
+      int m = 64-row;
+      float ss[n];
+      for(int i = 0; i < n; ++i) {
+	ss[i] = sinf(2.0*float(M_PI)*freq[m]*t[i]);
 	signal[i] = signal[i] + value * ss[i];
-	//cout << signal[i] << endl;
       }
     }
-    for(int i = 0; i < 500; ++i) {
+    for(int i = 0; i < n; ++i) {
       signal[i] = signal[i]/64;
-      initializeAudio(signal[i], samp_freq);
-      cout << signal[i] << endl;
+      // cout << signal[i] << endl;
     }
+    // cout << "-----" << n << endl;
+    Audio::Play(signal, n);
+    Audio::WaitForSilence();
+    cout << inc << endl;
+    inc++;
   }
-  
-  // uncomment to debug
-  // for(int i = 0; i < 500; ++i) {
-  //   cout << M_PI << endl;
-  // }
 }
 
 // extracts frames to jpg from video file
@@ -167,6 +164,7 @@ int main(int argc, char** argv) {
     img2freq(res);
   }
 
+  Audio::Close();
   
   return 0;
 }

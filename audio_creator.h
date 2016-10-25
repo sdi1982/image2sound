@@ -34,7 +34,7 @@ public:
     // Returns the frequency to use for playing samples
     static int GetFrequency()
     {
-        return 44100;
+        return 8000;
     }
 
 private:
@@ -126,6 +126,7 @@ void Audio::Play(const float * buf, size_t len)
         // Add the chunk and the channel it was played on to the list of
         // chunks we played
         chunks_played.push_back(std::pair<Mix_Chunk*, int>(chunk, rc));
+
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -133,56 +134,3 @@ void Audio::WaitForSilence()
 {
     while (Mix_Playing(-1)) SDL_Delay(10);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Plays a sequence of tones according to strings entered by the user
-// argc: ignored
-// argv: ignored
-///////////////////////////////////////////////////////////////////////////////
-/* int main(int argc, char* argv[]) */
-/* { */
-/*     Audio::Open(); */
-
-/*     int input_character; */
-
-/*     // Retrieve a character, or stop if Ctrl+D is entered (Ctrl+Z in Windows) */
-/*     printf("Type a string to play it: "); */
-/*     while ((input_character = getchar()) != EOF) */
-/*     { */
-/*         if (input_character == '\n') */
-/*         { */
-/*             printf("Type a string to play it: "); */
-/*             continue; */
-/*         } */
-
-/*         // Use the character to create a frequency. */
-/*         float frequency = input_character * 10 + 200.0f; */
-/*         printf("Playing at %f Hz\n", frequency); */
-
-/*         // Allocate a buffer for 0.1 seconds */
-/*         const size_t len = Audio::GetFrequency() / 10; */
-/*         float buf[len]; */
-
-/*         // Write a sine wave */
-/*         for (size_t i = 0; i < len / 2; i++) */
-/*         { */
-/*             // i * 2 is the frame number (2 samples per frame, one for each channel) */
-
-/*             // Left */
-/*             buf[i * 2 + 0] = sinf(i * 2 * frequency * 2 * float(M_PI) / Audio::GetFrequency()) * 0.5f; */
-            
-/*             // Right */
-/*             buf[i * 2 + 1] = sinf(i * 2 * frequency * 2 * float(M_PI) / Audio::GetFrequency()) * 0.5f; */
-/*         } */
-
-/*         // Play the sound */
-/*         Audio::Play(buf, len); */
-
-/*         // Wait for it to stop playing */
-/*         Audio::WaitForSilence(); */
-/*     } */
-
-/*     Audio::Close(); */
-
-/*     return EXIT_SUCCESS; */
-/* } */
