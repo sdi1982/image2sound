@@ -1,8 +1,8 @@
 #include "opencv/cv.h"
 #include "opencv/highgui.h"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "SDL2/SDL_mixer.h"
 #include "math.h"
+#include "audio_creator.h"
 
 #include <iostream>
 #include <string>
@@ -38,6 +38,12 @@ Mat modifyImage(Mat image) {
   // }
 
   return res;
+}
+
+void initializeAudio(double sample, double samp_freq) {
+  Audio::Open();
+
+  Audio::Close();
 }
 
 void img2freq(Mat input) {
@@ -78,6 +84,7 @@ void img2freq(Mat input) {
     }
     for(int i = 0; i < 500; ++i) {
       signal[i] = signal[i]/64;
+      initializeAudio(signal[i], samp_freq);
       cout << signal[i] << endl;
     }
   }
@@ -159,6 +166,7 @@ int main(int argc, char** argv) {
 
     img2freq(res);
   }
+
   
   return 0;
 }
