@@ -32,7 +32,7 @@ public:
     static void WaitForSilence();
 
     // Returns the frequency to use for playing samples
-    static int GetFrequency()
+    static float GetFrequency()
     {
         return 8000;
     }

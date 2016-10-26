@@ -56,18 +56,19 @@ void img2freq(Mat input) {
     freq[i] = freq[i+1] * pow(2.0, (-1.0/12.0));
   }
   
-
   const size_t n = 500;
+  // click sound
+  float click[n];
   // t = time == samples
   float t[n];
   for(int i = 0; i < n; ++i) {
     t[i] = (i+1)/Audio::GetFrequency();
+    click[i] = sinf(2.0*float(M_PI)*50*t[i]);
   }
 
-  int inc = 0;
   // sound every column as a chord
   for(int col = 0; col < 64; ++col) {
-    float signal[n] = {0};
+    float signals[n] = {0};
     for(int row = 0; row < 64; ++row) {
       float value = input.at<uchar>(row,col);
       value = value / 255.0;
@@ -75,19 +76,20 @@ void img2freq(Mat input) {
       float ss[n];
       for(int i = 0; i < n; ++i) {
 	ss[i] = sinf(2.0*float(M_PI)*freq[m]*t[i]);
-	signal[i] = signal[i] + value * ss[i];
+	signals[i] = signals[i] + value * ss[i];
       }
     }
     for(int i = 0; i < n; ++i) {
-      signal[i] = signal[i]/64;
+      signals[i] = signals[i]/64;
       // cout << signal[i] << endl;
     }
     // cout << "-----" << n << endl;
-    Audio::Play(signal, n);
+
+    Audio::Play(signals, n);
     Audio::WaitForSilence();
-    cout << inc << endl;
-    inc++;
   }
+  Audio::Play(click, n);
+  Audio::WaitForSilence();
 }
 
 // extracts frames to jpg from video file
@@ -101,10 +103,8 @@ void frameExtractor(CvCapture *capture) {
 
   while(key != 'q') {
     frame = cvQueryFrame(capture);
-    if(!frame) {
-      cout << "cvQueryFrame failed: no frame" << endl;
+    if(!frame)
       break;
-    }
     
     char filename[100];
     strcpy(filename, "pictures/frame_");
@@ -148,6 +148,7 @@ int main(int argc, char** argv) {
 
   String path("pictures/*.jpg"); 
   vector<String> fn;
+  int frame_counter = 0;
   
   glob(path, fn, true);
   for(size_t k = 0; k < fn.size(); ++k) {
@@ -158,11 +159,17 @@ int main(int argc, char** argv) {
       continue;
 
     Mat res = modifyImage(im);
-
+    
+    frame_counter++;
+    cout << "Frame #" << frame_counter << endl;
     img2freq(res);
   }
 
   Audio::Close();
+
+  // clear the pictures directory
+  // TODO: BAD, FIX LATER IF POSSIBLE
+  system("exec rm -r pictures/*");
   
   return 0;
 }
