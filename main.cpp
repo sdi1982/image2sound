@@ -32,7 +32,6 @@ Mat modifyImage(Mat image) {
 	pixel = ceil(pixel*16);
       
       pixel = pixel / 16;
-      cout << pixel << endl;
 
       res.at<float>(x,y) = pixel;
     }
@@ -82,7 +81,6 @@ void img2freq(Mat input) {
     }
     for(int i = 0; i < n; ++i) {
       signals[i] = signals[i]/64;
-      cout << signals[i] << endl;
     }
     Audio::Play(signals, n);
     Audio::WaitForSilence();
