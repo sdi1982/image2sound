@@ -20,22 +20,23 @@ Mat modifyImage(Mat image) {
   resize(res, res, size);
 
   // normalize image
-  equalizeHist(res, res);
+  res.convertTo(res, CV_32FC1);
+  normalize(res, res, 0.0, 1.0, NORM_MINMAX);
 
-  //res.convertTo(res, CV_32FC1);
-  //normalize(res, res, 0, 1.0, NORM_MINMAX, CV_8UC1);
-  // Mat img_pxl = res;
-  // for(int y = 0; y < img_pxl.rows; ++y) {
-  //   for(int x = 0; x < img_pxl.cols; ++x) {
-  //     // get pixel
-  //     float color = img_pxl.at<uchar>(x,y);
-  //     color = color / 255.0;
+  for(int y = 0; y < res.rows; ++y) {
+    for(int x = 0; x < res.cols; ++x) {
+      float pixel = res.at<float>(x,y);
+      if(pixel > 0) 
+	pixel = floor(pixel*16);
+      if(pixel < 0)
+	pixel = ceil(pixel*16);
       
-  //     // set pixel
-  //     img_pxl.at<uchar>(x,y) = color;
-  //     //cout << "(" << x << ", " << y << ")" <<  color << endl;
-  //   }
-  // }
+      pixel = pixel / 16;
+      cout << pixel << endl;
+
+      res.at<float>(x,y) = pixel;
+    }
+  }
 
   return res;
 }
@@ -68,10 +69,10 @@ void img2freq(Mat input) {
 
   // sound every column as a chord
   for(int col = 0; col < 64; ++col) {
+    // 500 signals per column
     float signals[n] = {0};
     for(int row = 0; row < 64; ++row) {
-      float value = input.at<uchar>(row,col);
-      value = value / 255.0;
+      float value = input.at<float>(row,col);
       int m = 64-row;
       float ss[n];
       for(int i = 0; i < n; ++i) {
@@ -81,10 +82,8 @@ void img2freq(Mat input) {
     }
     for(int i = 0; i < n; ++i) {
       signals[i] = signals[i]/64;
-      // cout << signal[i] << endl;
+      cout << signals[i] << endl;
     }
-    // cout << "-----" << n << endl;
-
     Audio::Play(signals, n);
     Audio::WaitForSilence();
   }
@@ -95,7 +94,6 @@ void img2freq(Mat input) {
 // extracts frames to jpg from video file
 void frameExtractor(CvCapture *capture) {
   int fps = (int)cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
-  cout << "FPS: " << fps << endl;
   
   IplImage* frame = NULL;
   int frame_number = 0;
