@@ -1,8 +1,8 @@
 #include "opencv/cv.h"
 #include "opencv/highgui.h"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "SDL2/SDL_mixer.h"
 #include "math.h"
+#include "audio_creator.h"
 
 #include <iostream>
 #include <string>
@@ -20,78 +20,78 @@ Mat modifyImage(Mat image) {
   resize(res, res, size);
 
   // normalize image
-  equalizeHist(res, res);
+  res.convertTo(res, CV_32FC1);
+  normalize(res, res, 0.0, 1.0, NORM_MINMAX);
 
-  //res.convertTo(res, CV_32FC1);
-  //normalize(res, res, 0, 1.0, NORM_MINMAX, CV_8UC1);
-  // Mat img_pxl = res;
-  // for(int y = 0; y < img_pxl.rows; ++y) {
-  //   for(int x = 0; x < img_pxl.cols; ++x) {
-  //     // get pixel
-  //     float color = img_pxl.at<uchar>(x,y);
-  //     color = color / 255.0;
+  for(int y = 0; y < res.rows; ++y) {
+    for(int x = 0; x < res.cols; ++x) {
+      float pixel = res.at<float>(x,y);
+      if(pixel > 0) 
+	pixel = floor(pixel*16);
+      if(pixel < 0)
+	pixel = ceil(pixel*16);
       
-  //     // set pixel
-  //     img_pxl.at<uchar>(x,y) = color;
-  //     //cout << "(" << x << ", " << y << ")" <<  color << endl;
-  //   }
-  // }
+      pixel = pixel / 16;
+
+      res.at<float>(x,y) = pixel;
+    }
+  }
 
   return res;
 }
 
 void img2freq(Mat input) {
-  // sampling frequency
-  double samp_freq = 8000;
+  Audio::Open();
+
   // create freq matrix and fill with a default value of 0
-  double freq[64] = {0};
+  float freq[64] = {0};
   
   // center frequency on 'A'
   // sequentially create higher and lower frequencies
-  freq[32] = 440.0;
-  for(int i = 33; i < 64; ++i) {
+  freq[31] = 440.0;
+  for(int i = 32; i < 64; ++i) {
     freq[i] = freq[i-1] * pow(2.0, (1.0/12.0));
   }
-  for(int i = 31; i > -1; --i) {
+  for(int i = 30; i > -1; --i) {
     freq[i] = freq[i+1] * pow(2.0, (-1.0/12.0));
   }
-
+  
+  const size_t n = 500;
+  // click sound
+  float click[n];
   // t = time == samples
-  double t[500];
-  for(int i = 0; i < 500; ++i) {
-    t[i] = (i+1)/samp_freq;
+  float t[n];
+  for(int i = 0; i < n; ++i) {
+    t[i] = (i+1)/Audio::GetFrequency();
+    click[i] = sinf(2.0*float(M_PI)*50*t[i]);
   }
 
   // sound every column as a chord
   for(int col = 0; col < 64; ++col) {
-    double signal[500] = {0};
+    // 500 signals per column
+    float signals[n] = {0};
     for(int row = 0; row < 64; ++row) {
-      float value = input.at<uchar>(row,col);
-      value = value / 255.0;
-      int m = 64-row+1;
-      double ss[500];
-      for(int i = 0; i < 500; ++i) {
-	ss[i] = sin(2.0*M_PI*freq[m]*t[i]);
-	signal[i] = signal[i] + value * ss[i];
-	//cout << signal[i] << endl;
+      float value = input.at<float>(row,col);
+      int m = 64-row;
+      float ss[n];
+      for(int i = 0; i < n; ++i) {
+	ss[i] = sinf(2.0*float(M_PI)*freq[m]*t[i]);
+	signals[i] = signals[i] + value * ss[i];
       }
     }
-    for(int i = 0; i < 500; ++i) {
-      signal[i] = signal[i]/64;
-      cout << signal[i] << endl;
+    for(int i = 0; i < n; ++i) {
+      signals[i] = signals[i]/64;
     }
+    Audio::Play(signals, n);
+    Audio::WaitForSilence();
   }
-  
-  // uncomment to debug
-  // for(int i = 0; i < 500; ++i) {
-  //   cout << M_PI << endl;
-  // }
+  Audio::Play(click, n);
+  Audio::WaitForSilence();
 }
 
 // extracts frames to jpg from video file
 void frameExtractor(CvCapture *capture) {
   int fps = (int)cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
-  cout << "FPS: " << fps << endl;
   
   IplImage* frame = NULL;
   int frame_number = 0;
@@ -99,10 +99,8 @@ void frameExtractor(CvCapture *capture) {
 
   while(key != 'q') {
     frame = cvQueryFrame(capture);
-    if(!frame) {
-      cout << "cvQueryFrame failed: no frame" << endl;
+    if(!frame)
       break;
-    }
     
     char filename[100];
     strcpy(filename, "pictures/frame_");
@@ -146,6 +144,7 @@ int main(int argc, char** argv) {
 
   String path("pictures/*.jpg"); 
   vector<String> fn;
+  int frame_counter = 0;
   
   glob(path, fn, true);
   for(size_t k = 0; k < fn.size(); ++k) {
@@ -156,9 +155,17 @@ int main(int argc, char** argv) {
       continue;
 
     Mat res = modifyImage(im);
-
+    
+    frame_counter++;
+    cout << "Frame #" << frame_counter << endl;
     img2freq(res);
   }
+
+  Audio::Close();
+
+  // clear the pictures directory
+  // TODO: BAD, FIX LATER IF POSSIBLE
+  system("exec rm -r pictures/*");
   
   return 0;
 }
