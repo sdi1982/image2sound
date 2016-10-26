@@ -66,6 +66,8 @@ void img2freq(Mat input) {
     click[i] = sinf(2.0*float(M_PI)*50*t[i]);
   }
 
+  // TODO: change signals to a 2d array and store all before playing
+  // to reduce 'clunkiness' 
   // sound every column as a chord
   for(int col = 0; col < 64; ++col) {
     // 500 signals per column
